@@ -14,7 +14,7 @@ ddat2012 <- ddat2012 %>% select(-starts_with("f_")) # removes flag columns
 
 ###
 # subset and clean data for use
-N <- 250
+N <- ncol(ddat2012)
 ddat.features <- data.frame(x=rep("", N), class=rep("", N), desc=rep("", N), stringsAsFactors=F)
 
 # Temporal Data
@@ -135,7 +135,7 @@ ddat.features[84,] <- list("uca_cleftlp", "factor", "Cleft Lip/Palate ")
 ddat.features[85,] <- list("uca_downs", "factor", "Downs Syndrome")
 
 ddat.features[86,] <- list("aged", "numeric", "Age at Death in Days")
-ddat.features[87,] <- list("place", "factor", "Place of injury")
+#ddat.features[87,] <- list("place", "factor", "Place of injury")
 
 ddat.features <- ddat.features[ddat.features$x!="", ] # drop empty rows
 ddat.features$x <- ddat.features$x %>% tolower()
@@ -147,42 +147,36 @@ ddat <- ddat2012 %>% select(ddat.features$x) %>% as.data.frame()
 ddat$alive <- ddat$aged %>% replace_na(-1)
 ddat$alive <- ifelse(ddat$alive > -1, 0, -1)
 ddat$alive <- -1 * ddat$alive
-ddat$alive <- as.factor(ddat$alive)
+ddat$alive <- factor(ddat$alive, levels=c(0, 1), labels=c('N', 'Y'))
+ddat <- ddat %>% select(-aged) # no longer needed, codified as "alive" categorical
+ddat.features <- ddat.features %>% filter(x != "aged") # also remove from features since no longer there
 
-# remove unknown values, either 'U' for categorical or the max value for numerics
-mask.factor  <- colnames(ddat) %in% subset(ddat.features, class == "factor")$x
-ddat[, mask.factor]  <- lapply(ddat[, mask.factor],  function(x) { na_if(x, 'U') %>% as.factor() })
+# get colindex by data type
+mask.numeric <- colnames(ddat) %in% subset(ddat.features, class=="numeric")$x
+mask.factor  <- colnames(ddat) %in% subset(ddat.features, class=="factor")$x
 
-mask.numeric <- colnames(ddat) %in% subset(ddat.features, class == "numeric")$x
 ddat[, mask.numeric] <- lapply(ddat[, mask.numeric], function(x) { na_if(x, max(unique(x))) %>% as.numeric() })
+ddat[, mask.factor]  <- lapply(ddat[, mask.factor],  function(x) { na_if(x, 'U') })
 
-#sapply(ddat, class) # sanity check classes of features
+ddat <- ddat[complete.cases(ddat),] # grab only complete cases 
+
+ddat[, mask.factor]  <- lapply(ddat[, mask.factor],  function(x) { make.names(x) %>% as.factor() }) # SLOW!
 
 ###
 # split data into training and testing subsets
 
-# table(ddat$alive) %>% prop.table() # complications to mom or child occur in 0.59% 23401/(23401+3937396)
-
-# split all the data
+# ddat2012$aged %>% is.na() %>% table() %>% prop.table() # complications to mom or child occur in 0.59% 23401/(23401+3937396)
 
 # sub-sample for smaller data sets, faster iterations (80-20 for test-train)
 i <- base::sample(1:nrow(ddat), replace=FALSE, size=1e4) # 10,000
 ddat.test  <- ddat %>% slice(i) 
 
-tmp <- ddat %>% slice(-i) %>% filter(alive==1) # YES alive
-j <- base::sample(1:nrow(tmp), replace=FALSE, size=2e4) # 20,000
-ddat.train <- tmp %>% slice(j)
-
-tmp <- ddat %>% slice(-i) %>% filter(alive==0) # NO alive
-j <- base::sample(1:nrow(tmp), replace=FALSE, size=2e4) # 20,000
-ddat.train <- tmp %>% slice(j)
-
-# sanity check 
-#data_test %>% apply(2, function(x) { prop.table(table(x)) })
-#data_test %>% apply(2, function(x) { prop.table(table(x)) })
+ddat.train1 <- ddat %>% slice(-i) %>% filter(alive=='Y') %>% sample_n(1e4) # YES alive w/10,000
+ddat.train2 <- ddat %>% slice(-i) %>% filter(alive=='N') %>% sample_n(1e4) # NO alive w/10,000
+ddat.train <- rbind(ddat.train1, ddat.train2)
 
 ###
 # data ready to be processed by different supervised learning algorithms
 cat("Writing processed death data...\n")
-save(ddat, file=paste0("~/src/family-health/death-all.RData"))
-save(ddat.test, ddat.train, ddat.features, file=paste0("~/src/family-health/death-", as.numeric(as.POSIXct(Sys.time())), ".RData"))
+save(ddat2012, ddat.features, file=paste0("~/src/family-health/dat/ddat-all.RData"))
+save(ddat, ddat.test, ddat.train, ddat.features, file=paste0("~/src/family-health/dat/ddat-", as.integer(as.POSIXct(Sys.time())), ".RData"))

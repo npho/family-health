@@ -13,7 +13,7 @@ natl2017 <- Filter(function(x) { n_distinct(x) > 1 }, natl2017) # removes featur
 
 ###
 # subset and clean data for use
-N <- 73
+N <- ncol(natl2017)
 nicu.features <- data.frame(x=rep("", N), class=rep("", N), desc=rep("", N), stringsAsFactors=F)
 
 # Temporal Data
@@ -141,44 +141,37 @@ natl2017 <- natl2017 %>% mutate(e_comp=ifelse(m_comp==1|b_comp==1, 1, 0))
 
 # just get the features and correct mutated columns
 nicu <- natl2017 %>% select(m_comp, b_comp, e_comp, nicu.features$x) %>% as.data.frame()
-nicu$m_comp <- as.factor(nicu$m_comp)
-nicu$b_comp <- as.factor(nicu$b_comp)
-nicu$e_comp <- as.factor(nicu$e_comp)
+nicu$m_comp <- factor(nicu$m_comp, levels=c(0, 1), labels=c('N', 'Y'))
+nicu$b_comp <- factor(nicu$b_comp, levels=c(0, 1), labels=c('N', 'Y'))
+nicu$e_comp <- factor(nicu$e_comp, levels=c(0, 1), labels=c('N', 'Y'))
 
-# remove unknown values, either 'U' for categorical or the max value for numerics
-mask.factor  <- colnames(nicu) %in% subset(nicu.features, class == "factor" )$x
-nicu[, mask.factor]  <- lapply(nicu[, mask.factor],  function(x) { na_if(x, 'U') %>% as.factor() })
+# get colindex by data type
+mask.numeric <- colnames(nicu) %in% subset(nicu.features, class=="numeric")$x
+mask.factor  <- colnames(nicu) %in% subset(nicu.features, class=="factor")$x
 
-mask.numeric <- colnames(nicu) %in% subset(nicu.features, class == "numeric")$x
+# set to NA all unknown values
 nicu[, mask.numeric] <- lapply(nicu[, mask.numeric], function(x) { na_if(x, max(unique(x))) %>% as.numeric() })
+nicu[, mask.factor]  <- lapply(nicu[, mask.factor],  function(x) { na_if(x, 'U') })
 
-#sapply(nicu, class) # sanity check classes of features
+nicu <- nicu[complete.cases(nicu),] # grab only complete cases 
+
+nicu[, mask.factor]  <- lapply(nicu[, mask.factor],  function(x) { make.names(x) %>% as.factor() })
 
 ###
 # split data into training and testing subsets
 
-# table(nicu$e_comp) %>% prop.table() # complications to mom or child occur in 11.9% 459221/(459221+3405533)
+# table(natl2017$e_comp) %>% prop.table() # complications to mom or child occur in 11.9% 459221/(459221+3405533)
 
 # sub-sample for smaller data sets, faster iterations (80-20 for test-train)
 i <- base::sample(1:nrow(nicu), replace=FALSE, size=1e4) # 10,000
 nicu.test  <- nicu %>% slice(i) 
 
-tmp <- nicu %>% slice(-i) %>% filter(e_comp==1) # YES complications
-j <- base::sample(1:nrow(tmp), replace=FALSE, size=2e4) # 20,000
-nicu.train1 <- tmp %>% slice(j)
-
-tmp <- nicu %>% slice(-i) %>% filter(e_comp==0) # NO complications
-j <- base::sample(1:nrow(tmp), replace=FALSE, size=2e4) # 20,000
-nicu.train2 <- tmp %>% slice(j)
-
+nicu.train1 <- nicu %>% slice(-i) %>% filter(e_comp=='Y') %>% sample_n(2e4) # YES complications w/20,000
+nicu.train2 <- nicu %>% slice(-i) %>% filter(e_comp=='N') %>% sample_n(2e4) # NO complications w/20,000
 nicu.train <- rbind(nicu.train1, nicu.train2)
-
-# sanity check 
-#data_test %>% apply(2, function(x) { prop.table(table(x)) })
-#data_test %>% apply(2, function(x) { prop.table(table(x)) })
 
 ###
 # data ready to be processed by different supervised learning algorithms
 cat("Writing processed natality data...\n")
-save(nicu, file=paste0("~/src/family-health/nicu-all.RData"))
-save(nicu.test, nicu.train, nicu.features, file=paste0("~/src/family-health/nicu-", as.numeric(as.POSIXct(Sys.time())), ".RData"))
+save(natl2017, nicu.features, file=paste0("~/src/family-health/nicu-all.RData"))
+save(nicu, nicu.test, nicu.train, nicu.features, file=paste0("~/src/family-health/nicu-", as.integer(as.POSIXct(Sys.time())), ".RData"))
