@@ -1,0 +1,3 @@
+[submodule "ABAGAIL"]
+	path = ABAGAIL
+	url = git@github.com:pushkar/ABAGAIL.git
