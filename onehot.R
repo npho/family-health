@@ -10,7 +10,7 @@ load("dat/ddat-latest.RData")
 nicu.train <- nicu.train %>% sample_n(1e4) %>% select(e_comp, nicu.features$x) # cut to 10k
 nicu.test <- nicu.test %>% select(e_comp, nicu.features$x) 
 
-ddat.train <- ddat.train %>% sample_n(1e4) %>% select(alive, ddat.features$x) # cut to 10k
+ddat.train <- ddat.train %>% sample_n(1e4) %>% select(alive,  ddat.features$x) # cut to 10k
 ddat.test <- ddat.test %>% select(alive, ddat.features$x) 
 
 set.seed(1)
