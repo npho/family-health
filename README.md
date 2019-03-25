@@ -12,6 +12,10 @@ Survey of supervised learning approaches to analysis of family health data from 
 
 Survey of randomized optimization methods including randomized hill climbing, simulated annealing, and genetic algorithms to determine weights in a neural network. Then contrived problems for which these algorithms will thrive. See submitted paper `npho3-analysis.pdf` for further details.
 
+### Unsupervised Learning 
+
+Survey of k-means and expectation maximization (EM) clustering algorithms with and without additional feature selection from PCA, ICA, randomized projection, and t-SNE. Both natality and mortality data sets were studied. See submitted paper `npho3-analysis.pdf` for full details.
+
 ## 2. Getting Data
 
 The data sets are (1) natality data from every recorded birth in the US in 2017 and (2) the linked mortality statistics from 2012 for every child under 1 year of age who died that year. Each can be processed with the pre-processing scripts in this repository, make sure to edit the scripts to point to the appropriate location of the original data on your local computer. The pre-processing scripts made sure the columns are of the appropriate R data structure (e.g., factor, numeric) as well as manually curating the features by removing redundant or medically irrelevant (to our hypothesis) ones. Alternatively, explore the `dat` folder within the repository for the cleaned and prepared R objects saved as `RData` files. Note: make sure `git lfs` is configured locally to handle these larger files.
@@ -62,3 +66,7 @@ java -cp ABAGAIL.jar mytest.CountOnesTest
 ```
 
 Several `*.out` files will be generated with the run data from which you can generate plots.
+
+### Unsupervised Learning
+
+The k-means and expectation maximization (EM) clustering codes are available in `kmc.R` and `em.R`, respectively. All four feature selection approaches are found within the `dimreduction.R` file, including the run through the existing artificial neural network (ANN). Respective visualization is included within each file. Code can be run on the command-line or sourced within an interactie R prompt.
