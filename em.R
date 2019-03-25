@@ -44,4 +44,3 @@ par(mfrow=c(1,2)) # 1 row, 2 col
 plot(nicu.bic, xlab="Clusters", ylab="BIC (Natality Data)")
 plot(ddat.bic, xlab="Clusters", ylab="BIC (Mortality Data)")
 dev.off()
-

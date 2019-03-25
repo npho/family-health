@@ -128,3 +128,187 @@ p8 <- ggplot(ddat.tse.viz, aes(x=PC1, y=PC2, color=Class)) + geom_point() + geom
 
 ggsave( "img/us-tse.png", plot=grid.arrange(p7, p8, nrow=1),
         width=10, height=5, units="in", device="png", dpi="retina")
+
+
+
+### ANN
+ann.ctrl <- trainControl(method="cv", number=4, classProbs=T, summaryFunction=twoClassSummary, savePredictions=T)
+
+nicu.ann.tune <- expand.grid(layer1=c(68), layer2=c(136), layer3=c(68),
+                                learning.rate=c(0.1),  momentum=0.9,
+                                dropout=c(0.5), activation=c("sigmoid"))
+ddat.ann.tune <- expand.grid(layer1=c(85), layer2=c(255), layer3=c(85),
+                                learning.rate=c(0.06), momentum=0.9,
+                                dropout=c(0.5), activation=c("sigmoid"))
+
+cat("[+] ann nicu testing w/NO feature selection...")
+start.run <- Sys.time()
+ann.train.nicu <- train(e_comp ~ .,
+                        dat=nicu.train,
+                        method="mxnet",
+                        metric="ROC",
+                        preProc=c("center", "scale"),
+                        trControl=ann.ctrl,
+                        tuneGrid=nicu.ann.tune
+                        )
+end.run <- Sys.time()
+cat("done!\n")
+cat("\tNICU control:", ann.train.nicu$results$ROC, "AUC,", difftime(end.run, start.run, units="sec"), "seconds\n")
+beep()
+
+### ANN-control
+
+cat("[+] ann ddat testing w/NO feature selection...")
+start.run <- Sys.time()
+ann.train.ddat <- train(alive ~ .,
+                        dat=ddat.train,
+                        method="mxnet",
+                        metric="ROC",
+                        preProc=c("center", "scale"),
+                        trControl=ann.ctrl,
+                        tuneGrid=ddat.ann.tune
+                        )
+end.run <- Sys.time()
+cat("done!\n")
+cat("\tDDAT control:", ann.train.ddat$results$ROC, "AUC,", difftime(end.run, start.run, units="sec"), "seconds\n")
+beep()
+
+### ANN-PCA
+
+nicu.pca.viz$Class <- factor(as.character(nicu.pca.viz$Class), levels=c("0", "1"), labels=c("normal", "icu"))
+ddat.pca.viz$Class <- factor(as.character(ddat.pca.viz$Class), levels=c("0", "1"), labels=c("death", "alive"))
+
+cat("[+] ann nicu testing w/PCA feature selection...")
+start.run <- Sys.time()
+ann.train.nicu <- train(Class ~ .,
+                        dat=nicu.pca.viz,
+                        method="mxnet",
+                        metric="ROC",
+                        preProc=c("center", "scale"),
+                        trControl=ann.ctrl,
+                        tuneGrid=nicu.ann.tune
+                        )
+end.run <- Sys.time()
+cat("done!\n")
+cat("\tNICU PCA:", ann.train.nicu$results$ROC, "AUC,", difftime(end.run, start.run, units="sec"), "seconds\n")
+beep()
+
+cat("[+] ann ddat testing w/PCA feature selection...")
+start.run <- Sys.time()
+ann.train.ddat <- train(Clss ~ .,
+                        dat=ddat.pca.viz,
+                        method="mxnet",
+                        metric="ROC",
+                        preProc=c("center", "scale"),
+                        trControl=ann.ctrl,
+                        tuneGrid=ddat.ann.tune
+                        )
+end.run <- Sys.time()
+cat("done!\n")
+cat("\tDDAT PCA:", ann.train.ddat$results$ROC, "AUC,", difftime(end.run, start.run, units="sec"), "seconds\n")
+beep()
+
+### ANN-ICA
+
+nicu.ica.viz$Class <- factor(as.character(nicu.ica.viz$Class), levels=c("0", "1"), labels=c("normal", "icu"))
+ddat.ica.viz$Class <- factor(as.character(ddat.ica.viz$Class), levels=c("0", "1"), labels=c("death", "alive"))
+
+cat("[+] ann nicu testing w/ICA feature selection...")
+start.run <- Sys.time()
+ann.train.nicu <- train(Class ~ .,
+                        dat=nicu.ica.viz,
+                        method="mxnet",
+                        metric="ROC",
+                        preProc=c("center", "scale"),
+                        trControl=ann.ctrl,
+                        tuneGrid=nicu.ann.tune
+                        )
+end.run <- Sys.time()
+cat("done!\n")
+cat("\tNICU ICA:", ann.train.nicu$results$ROC, "AUC,", difftime(end.run, start.run, units="sec"), "seconds\n")
+beep()
+
+cat("[+] ann ddat testing w/ICA feature selection...")
+start.run <- Sys.time()
+ann.train.ddat <- train(Clss ~ .,
+                        dat=ddat.ica.viz,
+                        method="mxnet",
+                        metric="ROC",
+                        preProc=c("center", "scale"),
+                        trControl=ann.ctrl,
+                        tuneGrid=ddat.ann.tune
+                        )
+end.run <- Sys.time()
+cat("done!\n")
+cat("\tDDAT ICA:", ann.train.ddat$results$ROC, "AUC,", difftime(end.run, start.run, units="sec"), "seconds\n")
+beep()
+
+### ANN-RPJ
+
+nicu.rpj.viz$Class <- factor(as.character(nicu.rpj.viz$Class), levels=c("0", "1"), labels=c("normal", "icu"))
+ddat.rpj.viz$Class <- factor(as.character(ddat.rpj.viz$Class), levels=c("0", "1"), labels=c("death", "alive"))
+
+cat("[+] ann nicu testing w/RandPro feature selection...")
+start.run <- Sys.time()
+ann.train.nicu <- train(Class ~ .,
+                        dat=nicu.rpj.viz,
+                        method="mxnet",
+                        metric="ROC",
+                        preProc=c("center", "scale"),
+                        trControl=ann.ctrl,
+                        tuneGrid=nicu.ann.tune
+                        )
+end.run <- Sys.time()
+cat("done!\n")
+cat("\tNICU RandPro:", ann.train.nicu$results$ROC, "AUC,", difftime(end.run, start.run, units="sec"), "seconds\n")
+beep()
+
+cat("[+] ann ddat testing w/RandPro feature selection...")
+start.run <- Sys.time()
+ann.train.ddat <- train(Clss ~ .,
+                        dat=ddat.rpj.viz,
+                        method="mxnet",
+                        metric="ROC",
+                        preProc=c("center", "scale"),
+                        trControl=ann.ctrl,
+                        tuneGrid=ddat.ann.tune
+                        )
+end.run <- Sys.time()
+cat("done!\n")
+cat("\tDDAT RandPro:", ann.train.ddat$results$ROC, "AUC,", difftime(end.run, start.run, units="sec"), "seconds\n")
+beep()
+
+### ANN-TSE
+
+nicu.tse.viz$Class <- factor(as.character(nicu.tse.viz$Class), levels=c("0", "1"), labels=c("normal", "icu"))
+ddat.tse.viz$Class <- factor(as.character(ddat.tse.viz$Class), levels=c("0", "1"), labels=c("death", "alive"))
+
+cat("[+] ann nicu testing w/t-SNE feature selection...")
+start.run <- Sys.time()
+ann.train.nicu <- train(Class ~ .,
+                        dat=nicu.tse.viz,
+                        method="mxnet",
+                        metric="ROC",
+                        preProc=c("center", "scale"),
+                        trControl=ann.ctrl,
+                        tuneGrid=nicu.ann.tune
+                        )
+end.run <- Sys.time()
+cat("done!\n")
+cat("\tNICU t-SNE:", ann.train.nicu$results$ROC, "AUC,", difftime(end.run, start.run, units="sec"), "seconds\n")
+beep()
+
+cat("[+] ann ddat testing w/t-SNE feature selection...")
+start.run <- Sys.time()
+ann.train.ddat <- train(Clss ~ .,
+                        dat=ddat.tse.viz,
+                        method="mxnet",
+                        metric="ROC",
+                        preProc=c("center", "scale"),
+                        trControl=ann.ctrl,
+                        tuneGrid=ddat.ann.tune
+                        )
+end.run <- Sys.time()
+cat("done!\n")
+cat("\tDDAT t-SNE:", ann.train.ddat$results$ROC, "AUC,", difftime(end.run, start.run, units="sec"), "seconds\n")
+beep()
